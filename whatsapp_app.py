@@ -48,6 +48,8 @@ msgs['timestamp'] = pd.to_datetime(msgs['received_at_date'] + ' ' + msgs['receiv
 msgs['date_new'] = msgs['timestamp'].dt.date
 msgs['hour'] = msgs['timestamp'].dt.hour
 
+# Extract mimetype from media column
+msgs['mimetype'] = msgs['media'].apply(lambda x: json.loads(x).get('mimetype') if pd.notnull(x) else 'text')
 
 # Reactions
 reactions['timestamp'] = pd.to_datetime(reactions['timestamp'], errors='coerce')
@@ -75,6 +77,10 @@ top_reacted = reactions.groupby('chat_id').size().nlargest(5)
 # Added/Left
 added = add_leave[add_leave['type'] == 'add'].groupby('chat_id').size()
 left = add_leave[add_leave['type'] == 'leave'].groupby('chat_id').size()
+
+# Mimetype Insights
+mimetype_msg_counts = msgs['mimetype'].value_counts()
+reactions_mimetype = msgs.merge(reactions, on='message_id', how='left').groupby('mimetype').size()
 
 # POC Mapping (Dummy Mapping, replace with actual mapping)
 poc_map = {'919895820344@c.us': 'POC 1', '919946889891@c.us': 'POC 2'}
@@ -133,6 +139,10 @@ st.dataframe(add_leave_summary)
 
 st.header("🧑‍💼 POC Analysis")
 st.dataframe(poc_summary)
+
+st.header("📦 Mimetype Distribution")
+st.subheader("Messages by Mimetype")
+st.bar_chart(mimetype_msg_counts)
 
 st.header("📅 Time Series Analysis")
 st.line_chart(time_series)
