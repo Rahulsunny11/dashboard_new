@@ -29,7 +29,6 @@ members['chat_id'] = members['chat_id'].astype(str).str.replace('@c.us', '', reg
 msgs['chat_id'] = msgs['chat_id'].astype(str).str.replace('@c.us', '', regex=False)
 msgs['sender_phone'] = msgs['sender_phone'].astype(str).str.replace('@c.us', '', regex=False)
 reactions['sender_id'] = reactions['sender_id'].astype(str).str.replace('@c.us', '', regex=False)
-add_leave['sender_id'] = add_leave['sender_id'].astype(str).str.replace('@c.us', '', regex=False)
 add_leave['author'] = add_leave['author'].astype(str).str.replace('@c.us', '', regex=False)
 
 chat['chat_id'] = chat['chat_id'].astype(str).str.replace('@g.us', '', regex=False)
@@ -37,7 +36,6 @@ members['chat_id'] = members['chat_id'].astype(str).str.replace('@g.us', '', reg
 msgs['chat_id'] = msgs['chat_id'].astype(str).str.replace('@g.us', '', regex=False)
 msgs['sender_phone'] = msgs['sender_phone'].astype(str).str.replace('@g.us', '', regex=False)
 reactions['sender_id'] = reactions['sender_id'].astype(str).str.replace('@g.us', '', regex=False)
-add_leave['sender_id'] = add_leave['sender_id'].astype(str).str.replace('@g.us', '', regex=False)
 add_leave['author'] = add_leave['author'].astype(str).str.replace('@g.us', '', regex=False)
 
 # Filter only group chats
