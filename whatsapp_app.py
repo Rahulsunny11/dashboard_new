@@ -24,8 +24,24 @@ chat['hour'] = chat['chat_created_at'].dt.hour
 chat['chat_name'] = chat['chat_name'].str.strip()
 chat['booth_number'] = chat['chat_name'].str.extract(r'(\d+)$')
 
+chat['chat_id'] = chat['chat_id'].astype(str).str.replace('@c.us', '', regex=False)
+members['chat_id'] = members['chat_id'].astype(str).str.replace('@c.us', '', regex=False)
+msgs['chat_id'] = msgs['chat_id'].astype(str).str.replace('@c.us', '', regex=False)
+msgs['sender_phone'] = msgs['sender_phone'].astype(str).str.replace('@c.us', '', regex=False)
+reactions['sender_id'] = reactions['sender_id'].astype(str).str.replace('@c.us', '', regex=False)
+add_leave['sender_id'] = add_leave['sender_id'].astype(str).str.replace('@c.us', '', regex=False)
+add_leave['author'] = add_leave['author'].astype(str).str.replace('@c.us', '', regex=False)
+
+chat['chat_id'] = chat['chat_id'].astype(str).str.replace('@g.us', '', regex=False)
+members['chat_id'] = members['chat_id'].astype(str).str.replace('@g.us', '', regex=False)
+msgs['chat_id'] = msgs['chat_id'].astype(str).str.replace('@g.us', '', regex=False)
+msgs['sender_phone'] = msgs['sender_phone'].astype(str).str.replace('@g.us', '', regex=False)
+reactions['sender_id'] = reactions['sender_id'].astype(str).str.replace('@g.us', '', regex=False)
+add_leave['sender_id'] = add_leave['sender_id'].astype(str).str.replace('@g.us', '', regex=False)
+add_leave['author'] = add_leave['author'].astype(str).str.replace('@g.us', '', regex=False)
+
 # Filter only group chats
-group_chat = chat[chat['chat_id'].str.contains('@g.us')].copy()
+group_chat = chat[chat['chat_type']=='group']
 
 # Members
 group_members = members[members['chat_id'].isin(group_chat['chat_id'])]
