@@ -29,6 +29,7 @@ st.markdown(
     .st-emotion-cache-nahz7x th {
         font-weight: bold !important;
     }
+    /* Removed custom styling for chart titles and containers */
     </style>
     """,
     unsafe_allow_html=True
@@ -238,31 +239,111 @@ with col5:
     st.markdown(f"<div style='{card_style} background-color: #FFE6E6; color: #B30000;'>% Active Groups<br><span style='font-size:32px;'>{percent_active_groups:.2f}%</span></div>", unsafe_allow_html=True)
 
 
-st.header("🧠 Group Type Distribution")
-# Recalculate group_sizes based on filtered_group_members for accurate distribution
-filtered_group_sizes = filtered_group_members.groupby('chat_id')['contact_phone_number'].nunique().reset_index(name='count')
-filtered_group_admins = filtered_group_members[filtered_group_members['contact_is_admin'] == True].groupby('chat_id')['contact_phone_number'].nunique()
-filtered_group_sizes['type'] = filtered_group_sizes.apply(lambda row: group_category(row, filtered_group_admins), axis=1)
+# Create three columns for the charts with explicit widths and gap
+chart_col1, chart_col2, chart_col3 = st.columns([1, 1, 1], gap="medium")
 
-if not filtered_group_sizes.empty:
-    group_type_counts = filtered_group_sizes['type'].value_counts().reset_index()
-    group_type_counts.columns = ['Group Type', 'Count']
+with chart_col1:
+    # Use st.markdown for title to control wrapping and alignment
+    st.markdown("<h3 style='white-space: nowrap; text-align: center; font-size: 18px; font-weight: bold; color: #333333;'>🧠 Group Type Distribution</h3>", unsafe_allow_html=True)
+    filtered_group_sizes = filtered_group_members.groupby('chat_id')['contact_phone_number'].nunique().reset_index(name='count')
+    filtered_group_admins = filtered_group_members[filtered_group_members['contact_is_admin'] == True].groupby('chat_id')['contact_phone_number'].nunique()
+    filtered_group_sizes['type'] = filtered_group_sizes.apply(lambda row: group_category(row, filtered_group_admins), axis=1)
 
-    if not group_type_counts.empty:
-        fig = px.bar(group_type_counts, x='Group Type', y='Count',
-                     #title='Group Type Distribution',
-                     color_discrete_sequence=["#4C78A8"])
-        fig.update_layout(
-            xaxis_title_font_color='black', xaxis_tickfont_color='black', 
-            yaxis_title_font_color='black', yaxis_tickfont_color='black', 
-        )
-        # Adjust textfont for better visibility
-        fig.update_traces(texttemplate='%{y}', textposition='outside', textfont=dict(color='black', size=12))
-        st.plotly_chart(fig, use_container_width=True)
+    if not filtered_group_sizes.empty:
+        group_type_counts = filtered_group_sizes['type'].value_counts().reset_index()
+        group_type_counts.columns = ['Group Type', 'Count']
+
+        if not group_type_counts.empty:
+            fig = px.pie(group_type_counts, names='Group Type', values='Count',
+                         color_discrete_sequence=["#4C78A8", "#57A773", "#F58518"], # Added more colors for pie
+                         hole=0.4) # Donut chart
+            fig.update_layout(
+                height=320, # Adjusted height
+                title_text=None, # Explicitly set title_text to None to remove "undefined"
+                margin=dict(t=30, b=30, l=30, r=30), # Adjust margins for pie chart
+                legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5) # Legend at bottom
+            )
+            # Changed to show only values (numbers)
+            fig.update_traces(textposition='inside', textinfo='value')
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No group type data available for the selected filters.")
     else:
         st.info("No group type data available for the selected filters.")
-else:
-    st.info("No group type data available for the selected filters.")
+
+with chart_col2:
+    # Use st.markdown for title to control wrapping and alignment
+    st.markdown("<h3 style='white-space: nowrap; text-align: center; font-size: 18px; font-weight: bold; color: #333333;'>📦 Messages by Type</h3>", unsafe_allow_html=True)
+    mimetype_msg_counts = filtered_msgs['mimetype'].value_counts().reset_index()
+    mimetype_msg_counts.columns = ['Msg Type', 'Count']
+
+    # Rename mimetype categories for better display
+    mimetype_msg_counts['Msg Type'] = mimetype_msg_counts['Msg Type'].replace({
+        'text': 'Text',
+        'video/mp4': 'Video',
+        'image/jpeg': 'Image',
+        'audio/mpeg': 'Audio'
+    })
+
+    if not mimetype_msg_counts.empty:
+        if not mimetype_msg_counts.empty:
+            fig = px.bar(mimetype_msg_counts, x='Msg Type', y='Count',
+                         color_discrete_sequence=["#57A773", "#4C78A8", "#F58518", "#B30000"])
+            fig.update_layout(
+                xaxis_title=None, # Removed x-axis title
+                yaxis_title=None, # Removed y-axis title
+                xaxis_tickfont_color='black', 
+                yaxis_tickfont_color='black', 
+                height=320, # Adjusted height
+                title_text=None # Explicitly set title_text to None to remove "undefined"
+            )
+            # Changed textposition to 'auto'
+            fig.update_traces(texttemplate='%{y}', textposition='auto', textfont=dict(color='black', size=12))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No message Msg Type data available for the selected filters.")
+    else:
+        st.info("No message Msg Type data available for the selected filters.")
+
+with chart_col3:
+    # Use st.markdown for title to control wrapping and alignment
+    st.markdown("<h3 style='white-space: nowrap; text-align: center; font-size: 18px; font-weight: bold; color: #333333;'>👍 Reactions by Message Type</h3>", unsafe_allow_html=True)
+    if not filtered_reactions.empty and not filtered_msgs.empty:
+        reactions_with_mimetype = filtered_reactions.merge(
+            filtered_msgs[['message_id', 'mimetype']],
+            on='message_id',
+            how='inner'
+        )
+        reactions_mimetype_counts = reactions_with_mimetype['mimetype'].value_counts().reset_index()
+        reactions_mimetype_counts.columns = ['Msg Type', 'Reaction Count']
+
+        # Rename mimetype categories for better display in reactions chart
+        reactions_mimetype_counts['Msg Type'] = reactions_mimetype_counts['Msg Type'].replace({
+            'text': 'Text',
+            'video/mp4': 'Video',
+            'image/jpeg': 'Image',
+            'audio/mpeg': 'Audio'
+        })
+
+        if not reactions_mimetype_counts.empty:
+            if not reactions_mimetype_counts.empty:
+                fig = px.bar(reactions_mimetype_counts, x='Msg Type', y='Reaction Count',
+                             color_discrete_sequence=["#F58518", "#57A773", "#4C78A8"])
+                fig.update_layout(
+                    xaxis_title=None, # Removed x-axis title
+                    yaxis_title=None, # Removed y-axis title
+                    xaxis_tickfont_color='black',
+                    yaxis_tickfont_color='black',
+                    height=320, # Adjusted height
+                    title_text=None # Explicitly set title_text to None to remove "undefined"
+                )
+                # Changed textposition to 'auto'
+                fig.update_traces(texttemplate='%{y}', textposition='auto', textfont=dict(color='black', size=12))
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No reaction Msg Type data available for the selected filters.")
+    else:
+        st.info("Not enough message or reaction data to show reactions by Msg Type for the selected filters.")
 
 
 st.header("🚦 Group Health")
@@ -361,59 +442,6 @@ else:
     st.info("No add/leave data available for the selected filters where participants were added or left.")
 
 
-st.header("📦 Msg Type Distribution") # Renamed header
-st.subheader("Messages by Msg Type") # Renamed subheader
-# Mimetype Insights (using filtered data)
-mimetype_msg_counts = filtered_msgs['mimetype'].value_counts().reset_index()
-mimetype_msg_counts.columns = ['Msg Type', 'Count'] # Renamed column
-
-if not mimetype_msg_counts.empty:
-    if not mimetype_msg_counts.empty:
-        fig = px.bar(mimetype_msg_counts, x='Msg Type', y='Count',
-                     #title='Messages by Msg Type',
-                     color_discrete_sequence=["#57A773"])
-        fig.update_layout(
-            xaxis_title_font_color='black', xaxis_tickfont_color='black', 
-            yaxis_title_font_color='black', yaxis_tickfont_color='black', 
-        )
-        # Adjust textfont for better visibility
-        fig.update_traces(texttemplate='%{y}', textposition='outside', textfont=dict(color='black', size=12))
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No message Msg Type data available for the selected filters.")
-else:
-    st.info("No message Msg Type data available for the selected filters.")
-
-st.subheader("Reactions by Msg Type") # Renamed subheader
-# Reactions by Mimetype: Count reactions based on the mimetype of the message reacted to
-if not filtered_reactions.empty and not filtered_msgs.empty:
-    # Merge reactions with messages to get the mimetype of the reacted message
-    reactions_with_mimetype = filtered_reactions.merge(
-        filtered_msgs[['message_id', 'mimetype']],
-        on='message_id',
-        how='inner'
-    )
-    reactions_mimetype_counts = reactions_with_mimetype['mimetype'].value_counts().reset_index()
-    reactions_mimetype_counts.columns = ['Msg Type', 'Reaction Count'] # Renamed column
-
-    if not reactions_mimetype_counts.empty:
-        if not reactions_mimetype_counts.empty:
-            fig = px.bar(reactions_mimetype_counts, x='Msg Type', y='Reaction Count',
-                         #title='Reactions by Msg Type',
-                         color_discrete_sequence=["#F58518"])
-            fig.update_layout(
-                xaxis_title_font_color='black', xaxis_tickfont_color='black',
-                yaxis_title_font_color='black', yaxis_tickfont_color='black'
-            )
-            # Adjust textfont for better visibility
-            fig.update_traces(texttemplate='%{y}', textposition='outside', textfont=dict(color='black', size=12))
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No reaction Msg Type data available for the selected filters.")
-else:
-    st.info("Not enough message or reaction data to show reactions by Msg Type for the selected filters.")
-
-
 st.header("🧑‍💼 POC Analysis (Group Admins as POCs)")
 # POC Analysis: Consider group admins as POCs
 # Get unique admin phone numbers from the filtered group members
@@ -485,9 +513,9 @@ with tab1:
 
         if not hour_wise_trend.empty:
             fig = px.line(hour_wise_trend, x='hour_label', y='Message Count',
-                         # title='Hour-wise Message Trend'
-                         )
+                          title='Hour-wise Message Trend')
             fig.update_layout(
+                xaxis_title='Hour',
                 xaxis_title_font_color='black', xaxis_tickfont_color='black',
                 yaxis_title_font_color='black', yaxis_tickfont_color='black'
             )
@@ -505,9 +533,9 @@ with tab2:
 
         if not day_wise_trend.empty:
             fig = px.line(day_wise_trend, x='date_new', y='Message Count',
-                          #title='Day-wise Message Trend'
-                          )
+                          title='Day-wise Message Trend')
             fig.update_layout(
+                xaxis_title='Date',
                 xaxis_title_font_color='black', xaxis_tickfont_color='black',
                 yaxis_title_font_color='black', yaxis_tickfont_color='black'
             )
